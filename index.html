@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>El tiempo del predio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    /* ── RESET ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── TOKENS ─────────────────────────────── */
+    :root {
+      --bg:       #0f0f0f;
+      --text:     #f0ede6;
+      --dim:      #4a4642;
+      --mid:      #8a8480;
+      --accent:   #4dd9ff;
+      --amarillo: #ffd93d;
+      --naranja:  #ff8c42;
+      --rosa:     #ff5ca8;
+      --serif:  'Cormorant Garamond', Georgia, serif;
+      --mono:   'IBM Plex Mono', monospace;
+      --sans:   'IBM Plex Sans', system-ui, sans-serif;
+      --g:      max(5.5vw, 2rem);
+      --max:    1260px;
+    }
+
+    html { scroll-behavior: auto; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── FIXED UI ───────────────────────────── */
+    #bar {
+      position: fixed; top: 0; left: 0;
+      height: 1px; width: 0%;
+      background: var(--accent);
+      z-index: 999; pointer-events: none;
+    }
+
+    #cap {
+      position: fixed;
+      bottom: 2rem; right: var(--g);
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.4em;
+      color: var(--dim);
+      text-transform: uppercase;
+      z-index: 100; pointer-events: none;
+    }
+
+    /* ── SCENE: base ────────────────────────── */
+    .scene {
+      min-height: 100svh;
+      padding: 5rem var(--g);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .scene--title {
+      justify-content: flex-end;
+      padding-bottom: 6rem;
+      border-top: 1px solid rgba(240,237,230,0.05);
+    }
+
+    .scene--center {
+      align-items: center;
+      text-align: center;
+    }
+
+    .scene--dark { background: #070707; }
+
+    .scene--void {
+      min-height: 100svh;
+      background: var(--bg);
+    }
+
+    .scene--narrow {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    /* ── ENTRADA ────────────────────────────── */
+    #entrada {
+      position: relative;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 5rem var(--g);
+    }
+
+    .e-ghost {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--mono);
+      font-weight: 300;
+      font-size: clamp(4rem, 12vw, 11rem);
+      letter-spacing: -0.05em;
+      color: rgba(240,237,230,0.04);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1;
+    }
+
+    .e-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.5em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 3rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .e-title {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(3rem, 7vw, 6rem);
+      line-height: 1.1;
+      text-align: center;
+      color: var(--text);
+      position: relative;
+      z-index: 1;
+      margin-bottom: 3rem;
+    }
+
+    .e-datos {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.55rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .e-dato {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      color: var(--dim);
+    }
+
+    .e-dato.hl { color: var(--accent); }
+
+    .e-scroll {
+      position: absolute;
+      bottom: 2.5rem; right: 3rem;
+      font-family: var(--mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.4em;
+      color: var(--dim);
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .e-scroll::after {
+      content: '';
+      width: 1px; height: 36px;
+      background: linear-gradient(to bottom, var(--dim), transparent);
+    }
+
+    /* ── MOVEMENT HEADERS ───────────────────── */
+    .m-num {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.5em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.75rem;
+    }
+
+    .m-title {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(3.8rem, 9.5vw, 8.5rem);
+      line-height: 0.95;
+      color: var(--text);
+      letter-spacing: -0.015em;
+      margin-bottom: 2.75rem;
+    }
+
+    .m-line {
+      display: block;
+      overflow: hidden;
+      padding-bottom: 0.06em;
+    }
+
+    .m-word {
+      display: block;
+      transform: translateY(110%);
+    }
+
+    .m-period {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+    }
+
+    /* ── BEATS ──────────────────────────────── */
+    .beat {
+      min-height: 100svh;
+      padding: 5rem var(--g);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.2rem;
+      max-width: var(--max);
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .beat--center {
+      align-items: center;
+      text-align: center;
+      max-width: 100%;
+    }
+
+    .beat--narrow {
+      max-width: 920px;
+    }
+
+    /* ── TEXT ATOMS ─────────────────────────── */
+    .t-narr {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.5rem, 3vw, 2.4rem);
+      line-height: 1.44;
+      color: var(--text);
+      display: block;
+    }
+
+    .t-narr.dim { color: var(--mid); }
+
+    .t-narr.principal {
+      font-size: clamp(1.7rem, 3.4vw, 2.8rem);
+      color: var(--text);
+    }
+
+    .t-giant {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(4rem, 10vw, 9rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .t-giant.italic { font-style: italic; }
+
+    .t-num {
+      font-family: var(--mono);
+      font-weight: 300;
+      font-size: clamp(4rem, 11vw, 10rem);
+      letter-spacing: -0.04em;
+      color: var(--naranja);
+      line-height: 1;
+    }
+
+    .t-sub {
+      font-family: var(--sans);
+      font-weight: 300;
+      font-size: clamp(0.95rem, 1.6vw, 1.25rem);
+      line-height: 1.75;
+      color: var(--mid);
+    }
+
+    .t-label {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.4em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .t-accent   { color: var(--accent);   font-style: normal; }
+    .t-amarillo { color: var(--amarillo); font-style: normal; }
+    .t-naranja  { color: var(--naranja);  font-style: normal; }
+    .t-rosa     { color: var(--rosa);     font-style: normal; }
+    .t-dim      { color: var(--dim); }
+    .t-mid      { color: var(--mid); }
+
+    /* ── QUOTE ──────────────────────────────── */
+    .quote-wrap {
+      position: relative;
+      padding: 5rem var(--g);
+      max-width: 980px;
+      margin: 0 auto;
+      width: 100%;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .quote-ornament {
+      position: absolute;
+      top: 2rem;
+      left: calc(var(--g) - 2rem);
+      font-family: var(--serif);
+      font-size: min(30vw, 300px);
+      line-height: 0.7;
+      color: rgba(240,237,230,0.025);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    blockquote {
+      font-family: var(--serif);
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+      line-height: 1.52;
+      color: var(--amarillo);
+      position: relative;
+      z-index: 1;
+      margin-bottom: 2.5rem;
+    }
+
+    .q-line { display: block; }
+
+    cite {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.4em;
+      color: var(--accent);
+      font-style: normal;
+      text-transform: uppercase;
+    }
+
+    /* ── INVENTORY ──────────────────────────── */
+    .inv-wrap {
+      min-height: 100svh;
+      padding: 5rem var(--g);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.1rem;
+    }
+
+    .inv-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.4em;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .inv-item {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+      line-height: 1.5;
+      color: var(--text);
+      padding: 0.2rem 0;
+    }
+
+    .inv-item.dim {
+      color: var(--mid);
+      font-size: clamp(1.1rem, 2.2vw, 1.75rem);
+    }
+
+    .inv-item.accent {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── GOLPE (MOV V) ──────────────────────── */
+    #mov5 {
+      min-height: 100svh;
+      background: #050505;
+      padding: 5rem var(--g);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .golpe-fecha {
+      font-family: var(--mono);
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      letter-spacing: 0.15em;
+      color: var(--accent);
+    }
+
+    .golpe-hecho {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(2rem, 5vw, 4.5rem);
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    .golpe-clausura {
+      font-family: var(--serif);
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1.2rem, 2.4vw, 2rem);
+      color: var(--text);
+      margin-top: 2rem;
+    }
+
+    /* ── FUEGO (MOV IX) ─────────────────────── */
+    #mov9 {
+      min-height: 100svh;
+      background: #050505;
+      padding: 5rem var(--g);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .f-fecha {
+      font-family: var(--mono);
+      font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+      letter-spacing: 0.2em;
+      color: var(--accent);
+    }
+
+    .f-narr {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.4rem, 2.8vw, 2.3rem);
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .f-narr.dim { color: var(--mid); }
+
+    .f-num {
+      font-family: var(--mono);
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      letter-spacing: 0.1em;
+      color: var(--mid);
+    }
+
+    .f-irreversible {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(2.5rem, 6vw, 5.5rem);
+      color: var(--rosa);
+      line-height: 1;
+      letter-spacing: -0.01em;
+      margin-top: 1rem;
+    }
+
+    /* ── EPILOGO ────────────────────────────── */
+    .ep-title {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.5rem, 3.2vw, 2.8rem);
+      line-height: 1.4;
+      color: var(--text);
+    }
+
+    .ep-trees {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(1.3rem, 2.6vw, 2.1rem);
+      line-height: 1.6;
+      color: var(--mid);
+    }
+
+    .ep-trees em {
+      color: var(--text);
+      font-style: normal;
+    }
+
+    /* ── FIN ────────────────────────────────── */
+    #fin {
+      min-height: 35svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px solid rgba(240,237,230,0.05);
+    }
+
+    #fin p {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.45em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    /* ── TRACKER LATERAL ────────────────────── */
+    #tracker {
+      position: fixed;
+      left: 1.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    #tracker-num {
+      font-family: var(--mono);
+      font-size: 0.56rem;
+      letter-spacing: 0.35em;
+      color: var(--dim);
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      line-height: 1;
+    }
+
+    #tracker-line {
+      display: block;
+      width: 1px;
+      height: 30px;
+      background: linear-gradient(to bottom, var(--dim), transparent);
+    }
+
+    /* ── CURSOR PARPADEANTE ─────────────────── */
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 99% { opacity: 0; }
+    }
+
+    .cursor {
+      display: inline;
+      font-family: var(--mono);
+      font-size: 0.8em;
+      color: var(--accent);
+      margin-left: 0.08em;
+      vertical-align: baseline;
+      animation: blink 1.1s step-end infinite;
+    }
+
+    /* ── GRAIN + VIÑETA ─────────────────────── */
+    #grain {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.042;
+    }
+
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 998;
+      background: radial-gradient(ellipse at center, transparent 36%, #000 100%);
+      opacity: 0.65;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Grain cinematográfico -->
+<svg id="grain" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <filter id="grain-f">
+    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#grain-f)"/>
+</svg>
+
+<!-- Viñeta adaptativa -->
+<div id="vignette" aria-hidden="true"></div>
+
+
+<div id="bar"></div>
+<div id="cap">Entrada</div>
+
+<div id="tracker" aria-hidden="true">
+  <span id="tracker-num">I</span>
+  <span id="tracker-line"></span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     ENTRADA
+══════════════════════════════════════════════ -->
+<section id="entrada">
+  <div class="e-ghost" aria-hidden="true">1906 — 2025</div>
+  <div class="e-eyebrow">el tiempo del predio</div>
+  <h1 class="e-title">Cronología<br>del Pellegrini</h1>
+  <div class="e-datos">
+    <span class="e-dato">Instituto Carlos Pellegrini</span>
+    <span class="e-dato">Pilar, Buenos Aires. Ruta 25.</span>
+    <span class="e-dato hl">78 hectáreas.</span>
+  </div>
+  <div class="e-scroll" aria-hidden="true">scroll</div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO I — EL DUELO QUE FUNDA
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov1" data-chapter="I — El duelo que funda">
+  <div class="m-num">Movimiento I</div>
+  <h2 class="m-title" aria-label="El duelo que funda">
+    <span class="m-line"><span class="m-word">El&nbsp;duelo</span></span>
+    <span class="m-line"><span class="m-word">que&nbsp;funda</span></span>
+  </h2>
+  <div class="m-period">1906 &mdash; 1910</div>
+</section>
+
+<div class="beat" id="b1-1" data-chapter="I — El duelo que funda">
+  <span class="t-narr">Carlos Pellegrini murió<br>el 17 de julio de 1906.</span>
+  <span class="t-narr dim">Era diputado.</span>
+  <span class="t-narr dim">Tenía 60 años.</span>
+</div>
+
+<div class="beat" id="b1-2" data-chapter="I — El duelo que funda">
+  <span class="t-narr">Sus amigos se reunieron<br>en la Bolsa de Comercio<br>de Buenos Aires.</span>
+  <span class="t-narr dim">No para construir un monumento.</span>
+  <span class="t-narr dim">Para construir lo que él<br>había soñado en voz alta.</span>
+</div>
+
+<div class="quote-wrap" id="b1-3" data-chapter="I — El duelo que funda">
+  <div class="quote-ornament" aria-hidden="true">"</div>
+  <blockquote>
+    <span class="q-line">"Lejos de los centros de gran población,</span>
+    <span class="q-line">con extensos y sombreados parques...</span>
+    <span class="q-line">jóvenes que reciben la instrucción</span>
+    <span class="q-line">y la educación moral</span>
+    <span class="q-line">que haga de ellos dignos ciudadanos</span>
+    <span class="q-line">de una democracia liberal y culta."</span>
+  </blockquote>
+  <cite>Carlos Pellegrini, 1863</cite>
+</div>
+
+<div class="beat" id="b1-4" data-chapter="I — El duelo que funda">
+  <div class="t-num" id="counter-num">$0,00</div>
+  <p class="t-sub">La suma pedida para erigir un monumento de mármol.<br>Alcanzaba para algo más.</p>
+</div>
+
+<div class="beat" id="b1-5" data-chapter="I — El duelo que funda">
+  <span class="t-narr">El <em class="t-accent">10 de septiembre de 1910</em>,<br>el presidente Figueroa Alcorta<br>firmó la Ley 7.446.</span>
+  <span class="t-narr dim">El Estado Nacional aceptaba la donación del predio.</span>
+  <span class="t-narr principal t-naranja">Con una condición perpetua:<br>conservar siempre<br>el nombre del Colegio.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO II — EL BARCO
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov2" data-chapter="II — El barco">
+  <div class="m-num">Movimiento II</div>
+  <h2 class="m-title" aria-label="El barco">
+    <span class="m-line"><span class="m-word">El</span></span>
+    <span class="m-line"><span class="m-word">barco</span></span>
+  </h2>
+  <div class="m-period">1907 &mdash; 1911</div>
+</section>
+
+<div class="beat" id="b2-1" data-chapter="II — El barco">
+  <span class="t-narr">El <em class="t-accent">14 de octubre de 1907</em><br>se firmó la escritura de compraventa.</span>
+  <span class="t-narr dim">38 hectáreas adquiridas.</span>
+  <span class="t-narr dim">32 hectáreas donadas.</span>
+</div>
+
+<div class="inv-wrap" id="b2-2" data-chapter="II — El barco">
+  <div class="inv-label">Highland Watch — Liverpool</div>
+  <div class="inv-item">Un barco zarpó de Liverpool.</div>
+  <div class="inv-item dim">Se llamaba Highland Watch.</div>
+  <div class="inv-item dim" style="margin-top:1rem;">Traía:</div>
+  <div class="inv-item">muebles.</div>
+  <div class="inv-item">vajilla con monograma.</div>
+  <div class="inv-item">cortinados.</div>
+  <div class="inv-item">alfombras.</div>
+  <div class="inv-item">cubiertos.</div>
+  <div class="inv-item dim" style="margin-top:1rem;">Desde Hamburgo llegaron los pupitres.</div>
+  <div class="inv-item dim">Los microscopios.</div>
+  <div class="inv-item dim">El equipamiento de química y física.</div>
+</div>
+
+<div class="beat" id="b2-3" data-chapter="II — El barco">
+  <span class="t-narr">El pabellón central se llamó<br>General San Martín.</span>
+  <span class="t-narr dim">Estilo Tudor. Torre con mirador.</span>
+  <span class="t-narr dim">Pisos de pinotea. Celosías de bronce.</span>
+  <span class="t-narr dim">El reloj de la Regencia en la torre.</span>
+</div>
+
+<div class="beat" id="b2-4" data-chapter="II — El barco">
+  <span class="t-narr">En <em class="t-accent">1911</em>, el Instituto Carlos Pellegrini abrió.</span>
+  <div class="t-num" style="font-size: clamp(3rem,8vw,7rem);">72</div>
+  <span class="t-narr dim">alumnos. Cada uno pagaba su mensualidad.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO III — EL PROBLEMA DE SER INGLÉS
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov3" data-chapter="III — El problema de ser inglés">
+  <div class="m-num">Movimiento III</div>
+  <h2 class="m-title" aria-label="El problema de ser inglés">
+    <span class="m-line"><span class="m-word">El&nbsp;problema</span></span>
+    <span class="m-line"><span class="m-word">de&nbsp;ser&nbsp;inglés</span></span>
+  </h2>
+  <div class="m-period">1912 &mdash; 1916</div>
+</section>
+
+<div class="beat" id="b3-1" data-chapter="III — El problema de ser inglés">
+  <span class="t-narr">El <em class="t-accent">29 de agosto de 1912</em>, el Estado Nacional<br>incorporó el Instituto como Colegio Nacional.</span>
+  <span class="t-narr dim">Primer director: Cecilio Newton.</span>
+  <span class="t-narr dim">Inglés. Masón.<br>Arquitecto de todo lo que el establecimiento era.</span>
+</div>
+
+<div class="beat beat--center" id="b3-2" data-chapter="III — El problema de ser inglés">
+  <span class="t-label" style="margin-bottom:2rem;">El Ministerio de Instrucción Pública</span>
+  <span class="t-narr" style="font-size:clamp(2rem,4.5vw,3.8rem);">intervino el establecimiento.</span>
+</div>
+
+<div class="beat beat--center" id="b3-3" data-chapter="III — El problema de ser inglés">
+  <div class="t-giant italic">"Carecía aún<br>de espíritu argentino."</div>
+</div>
+
+<div class="beat" id="b3-4" data-chapter="III — El problema de ser inglés">
+  <span class="t-narr dim">Un edificio construido con dinero argentino,</span>
+  <span class="t-narr dim">en honor a un presidente argentino,</span>
+  <span class="t-narr dim">para honrar su visión de la educación argentina,</span>
+  <span class="t-narr">necesitaba aprender a ser argentino.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO IV — CATORCE AÑOS SIN RASTRO
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov4" data-chapter="IV — Catorce años sin rastro">
+  <div class="m-num">Movimiento IV</div>
+  <h2 class="m-title" aria-label="Catorce años sin rastro">
+    <span class="m-line"><span class="m-word">Catorce&nbsp;años</span></span>
+    <span class="m-line"><span class="m-word">sin&nbsp;rastro</span></span>
+  </h2>
+  <div class="m-period">1916 &mdash; 1930</div>
+</section>
+
+<div class="beat" id="b4-1" data-chapter="IV — Catorce años sin rastro">
+  <span class="t-narr">El Instituto funcionó durante catorce años seguidos.</span>
+  <span class="t-narr dim">Formó técnicos. Mecánicos. Agrónomos.</span>
+  <span class="t-narr dim">Los archivos de jubilaciones lo confirman,<br>décadas después.</span>
+</div>
+
+<!-- VOID — pinned, emptiness is the content -->
+<div id="void4" class="scene scene--void" data-chapter="IV — Catorce años sin rastro">
+  <div style="max-width:var(--max);margin:0 auto;width:100%;">
+    <span class="t-narr" id="v4-text1">No encontramos documentos de esos años.</span>
+    <span class="t-narr dim" id="v4-text2" style="margin-top:1rem;display:block;">Los archivos no tienen<br>lo que los archivos no guardaron.</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO V — EL GOLPE
+══════════════════════════════════════════════ -->
+<div id="mov5" data-chapter="V — El golpe">
+  <div class="golpe-fecha">6 de septiembre de 1930.</div>
+  <div class="golpe-hecho">Golpe de Estado.<br>Uriburu.</div>
+  <div class="golpe-hecho">El Instituto cerró.</div>
+  <div class="golpe-clausura">No encontramos el decreto de clausura.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO VI — EL GIRO
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov6" data-chapter="VI — El giro">
+  <div class="m-num">Movimiento VI</div>
+  <h2 class="m-title" aria-label="El giro">
+    <span class="m-line"><span class="m-word">El</span></span>
+    <span class="m-line"><span class="m-word">giro</span></span>
+  </h2>
+  <div class="m-period">1932</div>
+</section>
+
+<div class="beat" id="b6-1" data-chapter="VI — El giro">
+  <span class="t-narr">En <em class="t-accent">1932</em>, el edificio más elegante<br>del Partido de Pilar<br>cambió de función.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">No de dueño.</span>
+  <span class="t-narr">De función.</span>
+</div>
+
+<div class="beat beat--center" id="b6-2" data-chapter="VI — El giro">
+  <span class="t-narr dim">El Gobierno de la Nación entregó el predio al</span>
+  <div class="t-giant" style="margin-top:1rem;">Patronato<br>Nacional<br>de Menores</div>
+</div>
+
+<div class="beat" id="b6-3" data-chapter="VI — El giro">
+  <span class="t-narr">No tenían padres<br>que los esperaran los viernes.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">El 95% vivía en esa situación<br>por indigencia de sus familias.</span>
+  <span class="t-narr t-rosa">No por vicio.</span>
+  <span class="t-narr t-rosa">No por delito.</span>
+</div>
+
+<div class="beat" id="b6-4" data-chapter="VI — El giro">
+  <span class="t-narr dim">Pero no llegaban todos.</span>
+  <span class="t-narr t-amarillo">Solo los mejores.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">Del 5 al 10% más inteligente<br>de todos los menores tutelados<br>por el Estado argentino.</span>
+  <span class="t-narr" style="margin-top:1rem;">El Pellegrini era la cima<br>del sistema tutelar nacional.</span>
+  <span class="t-narr dim">Una escuela de talentos<br>para los que no tenían nada.</span>
+</div>
+
+<div class="beat" id="b6-5" data-chapter="VI — El giro">
+  <span class="t-narr">Los manteles almidonados<br>seguían sobre las mesas.</span>
+  <span class="t-narr dim">Los cubiertos con monograma, en los cajones.</span>
+  <span class="t-narr dim">Los mozos, con saco y pajarita.</span>
+  <span class="t-narr" style="margin-top:1rem;">Solo que ahora servían a otros.</span>
+</div>
+
+<div class="beat" id="b6-6" data-chapter="VI — El giro">
+  <span class="t-narr dim">El primer director fue Felipe Marcos Giana.</span>
+  <span class="t-narr">No era docente.<br>Era técnico.</span>
+  <span class="t-narr dim">Egresado de la Escuela Industrial<br>Otto Krause.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO VII — LA VIDA EN EL PREDIO
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov7" data-chapter="VII — La vida en el predio">
+  <div class="m-num">Movimiento VII</div>
+  <h2 class="m-title" aria-label="La vida en el predio">
+    <span class="m-line"><span class="m-word">La&nbsp;vida</span></span>
+    <span class="m-line"><span class="m-word">en&nbsp;el&nbsp;predio</span></span>
+  </h2>
+  <div class="m-period">1936 &mdash; 1969</div>
+</section>
+
+<div class="beat" id="b7-1" data-chapter="VII — La vida en el predio">
+  <span class="t-narr">En <em class="t-accent">1936</em>, egresó la primera promoción.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">La Prensa lo cubrió el 1 de junio.</span>
+  <span class="t-narr dim">La Razón lo cubrió el 20 de mayo.</span>
+  <span class="t-narr dim">La revista oficial del Patronato lo presentó<br>como su obra más valiosa.</span>
+</div>
+
+<div class="inv-wrap" id="b7-2" data-chapter="VII — La vida en el predio">
+  <div class="inv-label">Una jornada en el predio</div>
+  <div class="inv-item">Por las mañanas, overol.</div>
+  <div class="inv-item">Por las tardes, traje, camisa, corbata, chaleco.</div>
+  <div class="inv-item dim">En el comedor, mantel almidonado,<br>servilleta bordada, copa de cristal.</div>
+  <div class="inv-item dim">En el taller, torno, fragua,<br>electricidad, carpintería.</div>
+  <div class="inv-item dim">En el campo, siembra, cosecha,<br>ganado, colmenas.</div>
+</div>
+
+<div class="beat beat--narrow" id="b7-3" data-chapter="VII — La vida en el predio">
+  <span class="t-narr">La Biblioteca tenía <em class="t-accent">2.600 volúmenes</em>.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">La novena edición de la Enciclopedia Británica. 1877.</span>
+  <span class="t-narr dim">Clásicos castellanos y greco-latinos.</span>
+  <span class="t-narr dim">Obras científicas en cuatro idiomas.</span>
+  <span class="t-narr dim">Boletines de la Academia Argentina de Letras.</span>
+  <span class="t-narr" style="margin-top:1rem;">La madera estaba tallada.<br>El orden, intacto.</span>
+</div>
+
+<div class="beat" id="b7-4" data-chapter="VII — La vida en el predio">
+  <span class="t-narr dim">El <em class="t-accent">26 de julio de 1952</em>,<br>los alumnos miraban una película en el comedor.</span>
+  <span class="t-narr dim">Después de la cena.</span>
+  <span class="t-narr" style="margin-top:1rem;">El director recibió un llamado.<br>Apagaron el proyector.</span>
+  <span class="t-narr" style="margin-top:1rem;">Había muerto Eva Duarte de Perón.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">Los adultos cambiaron de humor.<br>Los chicos no entendían qué había pasado.</span>
+</div>
+
+<div class="beat" id="b7-5" data-chapter="VII — La vida en el predio">
+  <span class="t-narr">En <em class="t-accent">1962</em>, el Instituto cumplió cincuenta años.</span>
+  <span class="t-narr dim">200 internos. 110 personas en el plantel docente.</span>
+  <span class="t-narr" style="margin-top:1rem;">Los alumnos publicaron una revista.<br>La llamaron <em>Hefaistos y Hermes</em>.</span>
+  <span class="t-narr dim" style="margin-top:1rem;">Hefaistos: dios del fuego y la forja.<br>Hermes: dios del comercio y los viajes.</span>
+  <span class="t-narr">Sabían exactamente quiénes eran.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO VIII — EL VACIADO
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="mov8" data-chapter="VIII — El vaciado">
+  <div class="m-num">Movimiento VIII</div>
+  <h2 class="m-title" aria-label="El vaciado">
+    <span class="m-line"><span class="m-word">El</span></span>
+    <span class="m-line"><span class="m-word">vaciado</span></span>
+  </h2>
+  <div class="m-period">1969 &mdash; 1995</div>
+</section>
+
+<div class="beat" id="b8-1" data-chapter="VIII — El vaciado">
+  <span class="t-narr">En <em class="t-accent">1969</em>, bajo Onganía, cerró.</span>
+  <span class="t-narr dim">En <em class="t-accent">1974</em>, bajo Perón, reabrió.</span>
+  <span class="t-narr dim">En <em class="t-accent">1982</em> dejó de ser internado.</span>
+  <span class="t-narr">En <em class="t-accent">1995</em> cerró definitivamente.</span>
+</div>
+
+<div class="inv-wrap" id="b8-2" data-chapter="VIII — El vaciado">
+  <div class="inv-label">Cada cierre se llevó algo</div>
+  <div class="inv-item">Las máquinas de los talleres.</div>
+  <div class="inv-item">Los aparatos del laboratorio.</div>
+  <div class="inv-item">Los muebles de estilo.</div>
+  <div class="inv-item">Los cuadros.</div>
+  <div class="inv-item">Las máquinas de lavar y secar ropa.</div>
+  <div class="inv-item">Los útiles escolares.</div>
+  <div class="inv-item">Los elementos de educación física.</div>
+  <div class="inv-item" style="margin-top:1.5rem;">El busto de Carlos Pellegrini,<br>esculpido por Lola Mora.</div>
+  <div class="inv-item dim" style="margin-top:1rem;">(El busto volvió.)</div>
+</div>
+
+<div class="beat" id="b8-3" data-chapter="VIII — El vaciado">
+  <span class="t-narr">En <em class="t-accent">1995</em>, el predio pasó al Consejo Nacional<br>de la Niñez, Adolescencia y Familia.</span>
+  <span class="t-narr" style="margin-top:1.5rem;">El edificio entró en el tiempo del abandono.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     MOVIMIENTO IX — EL FUEGO
+══════════════════════════════════════════════ -->
+<div id="mov9" data-chapter="IX — El fuego">
+  <div class="f-fecha" id="f1">6 de enero de 2003. Medianoche.</div>
+  <div class="f-narr" id="f2">El techo del pabellón central ardió.</div>
+  <div class="f-narr dim" id="f3">Ciento cincuenta bomberos.</div>
+  <div class="f-num" id="f4">Siete horas y media.</div>
+  <div class="f-narr t-rosa" id="f5" style="margin-top:1rem;">La Biblioteca se destruyó.</div>
+  <div class="f-num" id="f6">2.600 volúmenes.</div>
+  <div class="f-num" id="f7">La Enciclopedia Británica de 1877.</div>
+  <div class="f-num" id="f8">Los clásicos.</div>
+  <div class="f-num" id="f9">Los documentos históricos.</div>
+  <div class="f-irreversible" id="f10">Irreversible.</div>
+  <div class="f-narr dim" id="f11" style="margin-top:2rem;">Los vecinos de Pilar intentaron cruzar<br>el cordón policial para ayudar.</div>
+  <div class="f-narr t-rosa" id="f12">La policía los retuvo.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     EPÍLOGO — EL LUGAR ESPERA
+══════════════════════════════════════════════ -->
+<section class="scene scene--title" id="epilogo" data-chapter="Epílogo — El lugar espera">
+  <div class="m-num">Epílogo</div>
+  <h2 class="m-title" aria-label="El lugar espera">
+    <span class="m-line"><span class="m-word">El&nbsp;lugar</span></span>
+    <span class="m-line"><span class="m-word">espera</span></span>
+  </h2>
+  <div class="m-period">2003 &mdash; 2025</div>
+</section>
+
+<div class="beat beat--center" id="bep-1" data-chapter="Epílogo — El lugar espera">
+  <div class="t-giant t-amarillo">El edificio<br>no cayó.</div>
+</div>
+
+<div class="beat" id="bep-2" data-chapter="Epílogo — El lugar espera">
+  <span class="ep-trees">Los árboles siguen ahí.</span>
+  <span class="ep-trees" style="margin-top:1rem;">
+    <em>Eucaliptos. Plátanos. Cedros. Araucarias.</em>
+  </span>
+  <span class="ep-trees">Plantados en <em>1918</em> desde el Jardín Botánico<br>de Buenos Aires.</span>
+  <span class="ep-trees" style="margin-top:1.5rem;"><em>Ciento siete años después,<br>siguen creciendo.</em></span>
+</div>
+
+<div class="beat" id="bep-3" data-chapter="Epílogo — El lugar espera">
+  <span class="t-narr dim">El <em class="t-accent">12 de octubre de 2023</em>,<br>el Congreso de la Nación sancionó<br>la Ley 27.728.</span>
+  <div class="t-giant t-naranja" style="margin-top:2rem;">Universidad<br>Nacional<br>de Pilar.</div>
+</div>
+
+<div class="beat beat--center" id="bep-fin" data-chapter="Epílogo — El lugar espera">
+  <div class="e-eyebrow" style="position:static;transform:none;margin-bottom:2rem;">el tiempo del predio</div>
+  <span class="t-narr dim">Pilar, Buenos Aires. Ruta 25.</span>
+  <span class="t-narr dim">78 hectáreas.</span>
+  <span class="t-narr dim">1906 &mdash;<span class="cursor" aria-hidden="true">|</span></span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     FIN
+══════════════════════════════════════════════ -->
+<div id="fin">
+  <p>Instituto Carlos Pellegrini &mdash; Pilar, Buenos Aires</p>
+</div>
+
+
+<!-- ══ GSAP ══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ── PROGRESS ─────────────────────────────── */
+gsap.to('#bar', {
+  width: '100%', ease: 'none',
+  scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 0.4 }
+});
+
+/* ── CHAPTER LABEL ───────────────────────── */
+const cap = document.getElementById('cap');
+document.querySelectorAll('[data-chapter]').forEach(el => {
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top center',
+    onEnter:     () => { cap.textContent = el.dataset.chapter; },
+    onEnterBack: () => { cap.textContent = el.dataset.chapter; }
+  });
+});
+ScrollTrigger.create({
+  trigger: '#entrada', start: 'top center',
+  onEnterBack: () => { cap.textContent = 'Entrada'; }
+});
+
+/* ── ENTRADA ─────────────────────────────── */
+gsap.timeline({ defaults: { ease: 'power3.out' } })
+  .from('.e-ghost',   { opacity: 0, duration: 2.5, delay: 0.2 })
+  .from('.e-eyebrow', { opacity: 0, duration: 1.2 }, '-=2')
+  .from('.e-title',   { opacity: 0, y: 40, duration: 1.8, ease: 'power4.out' }, '-=1.5')
+  .from('.e-dato',    { opacity: 0, y: 12, stagger: 0.45, duration: 1 }, '-=1.2')
+  .from('.e-scroll',  { opacity: 0, duration: 1 }, '-=0.5');
+
+/* ── WORD-RISE HELPER ────────────────────── */
+function wordRise(id) {
+  const s = document.querySelector(id);
+  if (!s) return;
+  gsap.timeline({
+    scrollTrigger: { trigger: s, start: 'top 72%', toggleActions: 'play none none none' }
+  })
+  .from(s.querySelector('.m-num'),    { opacity: 0, y: 14, duration: 0.7 })
+  .to(s.querySelectorAll('.m-word'),  { y: 0, stagger: 0.2, duration: 1.4, ease: 'power4.out' }, '-=0.3')
+  .from(s.querySelector('.m-period'), { opacity: 0, y: 14, duration: 0.7 }, '-=0.7');
+}
+['#mov1','#mov2','#mov3','#mov4','#mov6','#mov7','#mov8','#epilogo'].forEach(wordRise);
+
+/* ── TEXT-STAGGER HELPER ─────────────────── */
+function revealBeat(id, vars) {
+  const el = document.querySelector(id);
+  if (!el) return;
+  gsap.from(el.querySelectorAll('.t-narr, .t-num, .ep-title, .ep-trees, .t-giant'), {
+    opacity: 0, y: 28, stagger: 0.4, duration: 1.1, ease: 'power3.out',
+    scrollTrigger: {
+      trigger: el, start: 'top 65%',
+      toggleActions: 'play none none none',
+      ...vars
+    }
+  });
+}
+
+/* ── MOV I — BEATS ───────────────────────── */
+revealBeat('#b1-1');
+revealBeat('#b1-2');
+
+gsap.from('#b1-3 .q-line', {
+  opacity: 0, y: 24, stagger: 0.5, duration: 1.2, ease: 'power3.out',
+  scrollTrigger: { trigger: '#b1-3', start: 'top 65%', toggleActions: 'play none none none' }
+});
+gsap.from('#b1-3 cite', {
+  opacity: 0, y: 12, duration: 0.9, delay: 0.5, ease: 'power2.out',
+  scrollTrigger: { trigger: '#b1-3', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+/* ── COUNTER — RECAUDACIÓN ───────────────── */
+function formatARS(val) {
+  const [int, dec] = val.toFixed(2).split('.');
+  return '$' + int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + dec;
+}
+
+const counterEl  = document.getElementById('counter-num');
+const counterObj = { val: 0 };
+
+gsap.to(counterObj, {
+  val: 394365.71,
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '#b1-4',
+    start: 'top 85%',
+    end: 'center center',
+    scrub: 0.5
+  },
+  onUpdate: () => { counterEl.textContent = formatARS(counterObj.val); }
+});
+
+gsap.from('#b1-4 .t-num', {
+  opacity: 0, y: 55, scale: 0.93, duration: 1.4, ease: 'expo.out',
+  scrollTrigger: { trigger: '#b1-4', start: 'top 68%', toggleActions: 'play none none none' }
+});
+gsap.from('#b1-4 .t-sub', {
+  opacity: 0, y: 20, duration: 1, delay: 0.45, ease: 'power3.out',
+  scrollTrigger: { trigger: '#b1-4', start: 'top 68%', toggleActions: 'play none none none' }
+});
+
+revealBeat('#b1-5');
+
+/* ── MOV II — BEATS ──────────────────────── */
+revealBeat('#b2-1');
+
+/* Inventory: pinned, scrubbed */
+gsap.set('#b2-2 .inv-item, #b2-2 .inv-label', { opacity: 0, x: -20 });
+gsap.timeline({
+  scrollTrigger: {
+    trigger: '#b2-2', start: 'top top', end: '+=250%',
+    pin: true, scrub: 1.5
+  }
+})
+.to('#b2-2 .inv-label', { opacity: 1, x: 0, duration: 0.3 }, 0)
+.to('#b2-2 .inv-item',  { opacity: 1, x: 0, stagger: 0.25, duration: 0.3 }, 0.4);
+
+revealBeat('#b2-3');
+revealBeat('#b2-4');
+
+/* ── MOV III — BEATS ─────────────────────── */
+revealBeat('#b3-1');
+
+gsap.from('#b3-2 .t-label, #b3-2 .t-narr', {
+  opacity: 0, y: 30, stagger: 0.5, duration: 1.1, ease: 'power3.out',
+  scrollTrigger: { trigger: '#b3-2', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+gsap.from('#b3-3 .t-giant', {
+  opacity: 0, scale: 0.96, y: 30, duration: 1.5, ease: 'expo.out',
+  scrollTrigger: { trigger: '#b3-3', start: 'top 68%', toggleActions: 'play none none none' }
+});
+
+gsap.from('#b3-4 .t-narr', {
+  opacity: 0, y: 22, stagger: 0.45, duration: 1, ease: 'power3.out',
+  scrollTrigger: { trigger: '#b3-4', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+/* ── MOV IV — void ───────────────────────── */
+revealBeat('#b4-1');
+
+/* The void: text appears, then nothing for 3× vh */
+gsap.set('#void4 #v4-text1, #void4 #v4-text2', { opacity: 0 });
+gsap.timeline({
+  scrollTrigger: {
+    trigger: '#void4', start: 'top top', end: '+=300%',
+    pin: true, scrub: 1.5
+  }
+})
+.to('#void4 #v4-text1', { opacity: 1, y: 0, duration: 0.3 }, 0)
+.to('#void4 #v4-text2', { opacity: 1, y: 0, duration: 0.3 }, 0.3);
+/* timeline ends at 0.6, pin continues to 1.0 — the rest is silence */
+
+/* ── MOV V — EL GOLPE (pinned, pausa medida) ─ */
+gsap.set('#mov5 .golpe-fecha, #mov5 .golpe-hecho, #mov5 .golpe-clausura', { opacity: 0 });
+gsap.timeline({
+  scrollTrigger: {
+    trigger: '#mov5', start: 'top top', end: '+=200%',
+    pin: true, scrub: 1.2
+  }
+})
+.to('#mov5 .golpe-fecha',    { opacity: 1, duration: 0.4 }, 0)
+.to('#mov5 .golpe-hecho',    { opacity: 1, stagger: 0.3, duration: 0.4 }, 0.4)
+/* silencio de 1.0 a 3.5 — la pausa existe, no abruma */
+.to('#mov5 .golpe-clausura', { opacity: 0.62, duration: 0.5 }, 3.5);
+
+/* ── MOV V — INVERSIÓN EN EL GOLPE ────────── */
+/*
+  Invierte solo #mov5, no el body entero.
+  El UI fijo (#cap, #tracker) queda intacto —
+  la inversión es del mundo narrativo, no del navegador.
+*/
+ScrollTrigger.create({
+  trigger: '#mov5',
+  start: 'top top',
+  onEnter:     () => gsap.to('#mov5', { filter: 'invert(1)', duration: 0.15, ease: 'none' }),
+  onLeaveBack: () => gsap.to('#mov5', { filter: 'invert(0)', duration: 0.6,  ease: 'power1.out' })
+});
+ScrollTrigger.create({
+  trigger: '#mov6',
+  start: 'top top',
+  onEnter:     () => gsap.to('#mov5', { filter: 'invert(0)', duration: 0.6,  ease: 'power1.out' }),
+  onEnterBack: () => gsap.to('#mov5', { filter: 'invert(1)', duration: 0.15, ease: 'none' })
+});
+
+/* ── MOV VI — BEATS ──────────────────────── */
+['#b6-1','#b6-2','#b6-3','#b6-4','#b6-5','#b6-6'].forEach(id => {
+  const el = document.querySelector(id);
+  if (!el) return;
+  gsap.from(el.querySelectorAll('.t-narr, .t-giant'), {
+    opacity: 0, y: 28, stagger: 0.42, duration: 1.1, ease: 'power3.out',
+    scrollTrigger: { trigger: el, start: 'top 65%', toggleActions: 'play none none none' }
+  });
+});
+
+/* ── MOV VII — BEATS ─────────────────────── */
+revealBeat('#b7-1');
+
+/* Inventory pinned */
+gsap.set('#b7-2 .inv-item, #b7-2 .inv-label', { opacity: 0, x: -20 });
+gsap.timeline({
+  scrollTrigger: {
+    trigger: '#b7-2', start: 'top top', end: '+=280%',
+    pin: true, scrub: 1.5
+  }
+})
+.to('#b7-2 .inv-label', { opacity: 1, x: 0, duration: 0.3 }, 0)
+.to('#b7-2 .inv-item',  { opacity: 1, x: 0, stagger: 0.3, duration: 0.3 }, 0.4);
+
+revealBeat('#b7-3');
+
+gsap.from('#b7-4 .t-narr', {
+  opacity: 0, y: 25, stagger: 0.48, duration: 1, ease: 'power3.out',
+  scrollTrigger: { trigger: '#b7-4', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+revealBeat('#b7-5');
+
+/* ── MOV VIII — BEATS ────────────────────── */
+gsap.from('#b8-1 .t-narr', {
+  opacity: 0, x: -25, stagger: 0.4, duration: 1, ease: 'power3.out',
+  scrollTrigger: { trigger: '#b8-1', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+/* Vaciado inventory: pinned, accumulates loss */
+gsap.set('#b8-2 .inv-item, #b8-2 .inv-label', { opacity: 0, y: 15 });
+gsap.timeline({
+  scrollTrigger: {
+    trigger: '#b8-2', start: 'top top', end: '+=350%',
+    pin: true, scrub: 1.5
+  }
+})
+.to('#b8-2 .inv-label', { opacity: 1, y: 0, duration: 0.3 }, 0)
+.to('#b8-2 .inv-item',  { opacity: 1, y: 0, stagger: 0.22, duration: 0.3 }, 0.3);
+
+revealBeat('#b8-3');
+
+/* ── MOV IX — EL FUEGO (pinned, staccato) ── */
+gsap.set(['#f1','#f2','#f3','#f4','#f5','#f6','#f7','#f8','#f9','#f10','#f11','#f12'], { opacity: 0 });
+
+gsap.timeline({
+  scrollTrigger: {
+    trigger: '#mov9', start: 'top top', end: '+=700%',
+    pin: true, scrub: 2
+  }
+})
+.to('#f1',  { opacity: 1, duration: 0.35 }, 0)
+.to('#f2',  { opacity: 1, duration: 0.35 }, 1.2)
+.to('#f3',  { opacity: 1, duration: 0.35 }, 2.2)
+.to('#f4',  { opacity: 1, duration: 0.35 }, 3.0)
+.to('#f5',  { opacity: 1, duration: 0.35 }, 4.2)
+.to('#f6',  { opacity: 1, duration: 0.35 }, 4.8)
+.to('#f7',  { opacity: 1, duration: 0.35 }, 5.3)
+.to('#f8',  { opacity: 1, duration: 0.35 }, 5.7)
+.to('#f9',  { opacity: 1, duration: 0.35 }, 6.1)
+.to('#f10', { opacity: 1, duration: 0.35 }, 7.5)
+.to('#f11', { opacity: 1, duration: 0.35 }, 9.2)
+.to('#f12', { opacity: 1, duration: 0.35 }, 9.7);
+
+/* ── EPÍLOGO ─────────────────────────────── */
+gsap.from('#bep-1 .t-giant', {
+  opacity: 0, y: 40, duration: 1.5, ease: 'power4.out',
+  scrollTrigger: { trigger: '#bep-1', start: 'top 68%', toggleActions: 'play none none none' }
+});
+
+gsap.from('#bep-2 .ep-trees', {
+  opacity: 0, y: 22, stagger: 0.5, duration: 1.2, ease: 'power3.out',
+  scrollTrigger: { trigger: '#bep-2', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+gsap.from('#bep-3 .t-narr, #bep-3 .t-giant', {
+  opacity: 0, y: 30, stagger: 0.4, duration: 1.2, ease: 'power3.out',
+  scrollTrigger: { trigger: '#bep-3', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+gsap.from('#bep-fin .e-eyebrow, #bep-fin .t-narr', {
+  opacity: 0, stagger: 0.5, duration: 1.2, ease: 'power2.out',
+  scrollTrigger: { trigger: '#bep-fin', start: 'top 65%', toggleActions: 'play none none none' }
+});
+
+/* ── SCROLL HINT FADES ───────────────────── */
+ScrollTrigger.create({
+  trigger: '#mov1', start: 'top 90%',
+  onEnter: () => gsap.to('.e-scroll', { opacity: 0, duration: 0.6 }),
+  once: true
+});
+
+/* ── VELOCITY — STRETCH DE TEXTO ─────────── */
+/*
+  Cada frame lee la velocidad del scroll (px/s).
+  La mapea a un scaleX sutil usando la propiedad
+  CSS `scale` individual — no interfiere con los
+  `transform` que controla GSAP en las animaciones.
+*/
+const vxEls = document.querySelectorAll(
+  '.t-narr, .t-giant, .t-num, blockquote, ' +
+  '.inv-item, .f-narr, .f-num, .f-irreversible, ' +
+  '.golpe-hecho, .golpe-fecha, .golpe-clausura, ' +
+  '.ep-trees, .e-title, .m-word, .m-num, .m-period'
+);
+
+let vx = 1, prevVx = 1;
+
+gsap.ticker.add(() => {
+  const vel    = ScrollTrigger.getVelocity();
+  const target = gsap.utils.clamp(0.86, 1.14, 1 + vel * 0.000065);
+
+  /* lerp con amortiguación — retorno suave a 1.0 */
+  vx += (target - vx) * 0.09;
+
+  /* solo actualiza DOM si el cambio es perceptible */
+  if (Math.abs(vx - prevVx) > 0.0003) {
+    const s = vx.toFixed(4);
+    vxEls.forEach(el => { el.style.scale = `${s} 1`; });
+    prevVx = vx;
+  }
+});
+
+/* ── TRACKER LATERAL ─────────────────────── */
+const trackerEl  = document.getElementById('tracker');
+const trackerNum = document.getElementById('tracker-num');
+
+function setTrackerNum(text) {
+  gsap.timeline()
+    .to(trackerNum, { opacity: 0, duration: 0.15, ease: 'none' })
+    .call(() => { trackerNum.textContent = text; })
+    .to(trackerNum, { opacity: 1, duration: 0.15, ease: 'none' });
+}
+
+/* Mostrar al entrar en MOV I, ocultar al volver a entrada o llegar al fin */
+ScrollTrigger.create({
+  trigger: '#mov1', start: 'top center',
+  onEnter:     () => gsap.to(trackerEl, { opacity: 1, duration: 0.6 }),
+  onLeaveBack: () => gsap.to(trackerEl, { opacity: 0, duration: 0.6 })
+});
+ScrollTrigger.create({
+  trigger: '#fin', start: 'top center',
+  onEnter:     () => gsap.to(trackerEl, { opacity: 0, duration: 0.6 }),
+  onLeaveBack: () => gsap.to(trackerEl, { opacity: 1, duration: 0.6 })
+});
+
+/* Actualizar número por movimiento */
+[
+  { id: '#mov1',    n: 'I'    },
+  { id: '#mov2',    n: 'II'   },
+  { id: '#mov3',    n: 'III'  },
+  { id: '#mov4',    n: 'IV'   },
+  { id: '#mov5',    n: 'V'    },
+  { id: '#mov6',    n: 'VI'   },
+  { id: '#mov7',    n: 'VII'  },
+  { id: '#mov8',    n: 'VIII' },
+  { id: '#mov9',    n: 'IX'   },
+  { id: '#epilogo', n: 'EP'   },
+].forEach(({ id, n }) => {
+  ScrollTrigger.create({
+    trigger: id, start: 'top center',
+    onEnter:     () => setTrackerNum(n),
+    onEnterBack: () => setTrackerNum(n),
+  });
+});
+
+/* ── VIÑETA ADAPTATIVA POR MOVIMIENTO ────── */
+/*
+  La oscuridad al borde de pantalla cambia con la narrativa.
+  Pesada en los momentos de drama, abierta en la resolución.
+*/
+const vgnEl = document.getElementById('vignette');
+
+function setVgn(v) {
+  gsap.to(vgnEl, { opacity: v, duration: 1.4, ease: 'power2.inOut' });
+}
+
+[
+  { id: '#mov1',    v: 0.72 },  /* duelo — ligeramente opresivo */
+  { id: '#mov2',    v: 0.58 },  /* barco — apertura, llegada */
+  { id: '#mov3',    v: 0.60 },  /* problema inglés */
+  { id: '#void4',   v: 0.94 },  /* 14 años sin rastro — el vacío más cerrado */
+  { id: '#mov5',    v: 0.88 },  /* golpe — pesadez máxima */
+  { id: '#mov6',    v: 0.50 },  /* giro — las cosas cambian */
+  { id: '#mov7',    v: 0.46 },  /* vida del predio — lo más luminoso */
+  { id: '#mov8',    v: 0.78 },  /* vaciado — la oscuridad vuelve */
+  { id: '#mov9',    v: 0.90 },  /* fuego — el clímax */
+  { id: '#epilogo', v: 0.30 },  /* el lugar espera — apertura, esperanza */
+].forEach(({ id, v }) => {
+  ScrollTrigger.create({
+    trigger: id, start: 'top center',
+    onEnter:     () => setVgn(v),
+    onEnterBack: () => setVgn(v),
+  });
+});
+
+</script>
+</body>
+</html>

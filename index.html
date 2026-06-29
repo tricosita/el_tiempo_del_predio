@@ -15,7 +15,7 @@
     :root {
       --bg:       #0f0f0f;
       --text:     #f0ede6;
-      --dim:      #4a4642;
+      --dim:      #7e7a76;   /* was #4a4642 — raised for WCAG AA (4.95:1 on --bg) */
       --mid:      #8a8480;
       --accent:   #4dd9ff;
       --amarillo: #ffd93d;
@@ -574,6 +574,49 @@
       z-index: 998;
       background: radial-gradient(ellipse at center, transparent 36%, #000 100%);
       opacity: 0.65;
+    }
+
+    /* ── REDUCED MOTION ─────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      /* Reveal all GSAP-gated content immediately */
+      .m-word, .t-narr, .t-giant, .t-num, .t-sub, blockquote,
+      .inv-item, .inv-label, .f-narr, .f-num, .f-irreversible,
+      .golpe-fecha, .golpe-hecho, .golpe-clausura,
+      .m-num, .m-period, .e-title, .e-dato, .e-eyebrow,
+      .ep-trees, #v4-text1, #v4-text2,
+      #f1, #f2, #f3, #f4, #f5, #f6, #f7,
+      #f8, #f9, #f10, #f11, #f12 {
+        opacity: 1 !important;
+        transform: none !important;
+        scale: none !important;
+      }
+      /* Stop blinking cursor */
+      .cursor { animation: none; opacity: 1; }
+      /* No inversion on golpe */
+      #mov5 { filter: none !important; }
+      /* Hide grain (moving texture) */
+      #grain { display: none; }
+    }
+
+    /* ── MOBILE ─────────────────────────────── */
+    @media (max-width: 768px) {
+      #tracker { display: none; }
+
+      #cap {
+        font-size: 0.5rem;
+        right: 1rem;
+        top: 0.75rem;
+        max-width: 48vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compensate --g on narrow screens */
+      :root { --g: max(4vw, 1.2rem); }
+
+      /* Vignette less aggressive on small screens */
+      #vignette { opacity: 0.45; }
     }
   </style>
 </head>
@@ -1379,7 +1422,7 @@ function setVgn(v) {
   { id: '#mov6',    v: 0.50 },  /* giro — las cosas cambian */
   { id: '#mov7',    v: 0.46 },  /* vida del predio — lo más luminoso */
   { id: '#mov8',    v: 0.78 },  /* vaciado — la oscuridad vuelve */
-  { id: '#mov9',    v: 0.90 },  /* fuego — el clímax */
+  { id: '#mov9',    v: 0.82 },  /* fuego — el clímax */
   { id: '#epilogo', v: 0.30 },  /* el lugar espera — apertura, esperanza */
 ].forEach(({ id, v }) => {
   ScrollTrigger.create({
